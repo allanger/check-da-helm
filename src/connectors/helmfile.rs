@@ -4,7 +4,7 @@ use serde_json::from_str;
 use crate::types;
 
 use super::Connector;
-use std::{borrow::Borrow, fmt::format, io::Result, process::Command};
+use std::{borrow::Borrow, io::Result, process::Command};
 
 pub(crate) struct Helmfile {
     path: String,

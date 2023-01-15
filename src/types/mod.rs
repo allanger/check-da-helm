@@ -16,7 +16,7 @@ pub(crate) struct HelmRepo {
 }
 
 #[derive(Clone, Serialize)]
-enum Status {
+pub(crate) enum Status {
     Uptodate,
     Outdated,
     Missing,
