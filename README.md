@@ -20,7 +20,7 @@ Prebuilt binaries exist for **Linux x86_64** and **MacOS arm64** and **x86_64**
 
 Don't forget to add the binary to $PATH
 ```BASH
-$ curl https://raw.githubusercontent.com/allanger/check-da-helm/main/scripts/download_cdm.sh | bash
+$ curl https://raw.githubusercontent.com/allanger/check-da-helm/main/scripts/download_cdh.sh | bash
 $ cdm -h
 ```
 

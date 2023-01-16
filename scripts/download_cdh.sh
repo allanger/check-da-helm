@@ -33,7 +33,7 @@ case "$(uname)" in
   exit 1
   ;;
 esac
-LATEST_VERSION="v$(curl -s https://raw.githubusercontent.com/allanger/check-da-helm/main/Cargo.toml | awk -F ' = ' '$1 ~ /version/ { gsub(/[\"]/, "", $2); printf("%s",$2) }')"
+LATEST_VERSION="v$(curl -s https://raw.githubusercontent.com/allanger/check-da-helm/main/Cargo.toml | awk -F ' = ' '$1 ~ /version/ { gsub(/[\"]/, "", $2); printf("%s",$2); exit}')"
 echo "Downloading $LATEST_VERSION"
 
 RELEASE_NAME=cdh-$LATEST_VERSION-$TARGET
