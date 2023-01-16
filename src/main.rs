@@ -1,10 +1,10 @@
 mod connectors;
+mod output;
 mod types;
-
-use clap::{Parser, ValueEnum};
+use clap::{arg, command, Parser, Subcommand, ValueEnum};
 use connectors::{Argo, Connector, Helm, Helmfile};
-use handlebars::Handlebars;
 use log::{debug, error, info, warn};
+use output::Output;
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use std::{
@@ -12,7 +12,7 @@ use std::{
     io::Result,
     process::{exit, Command},
 };
-use tabled::Tabled;
+use types::ExecResult;
 use version_compare::{Cmp, Version};
 
 use crate::types::{HelmChart, Status};
@@ -24,13 +24,22 @@ enum Kinds {
     Helmfile,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum Outputs {
+    Yaml,
+    HTML,
+}
+
 /// Check you helm releaseas managed by Argo
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Type of the
+    /// How do you install your helm charts
     #[clap(long, value_enum)]
     kind: Kinds,
+    /// What kind of output would you like to receive?
+    #[clap(long, value_enum, default_value = "yaml")]
+    output: Outputs,
     /// Path to the helmfile
     #[clap(short, long, value_parser, default_value = "./")]
     path: String,
@@ -42,6 +51,14 @@ struct Args {
     no_sync: bool,
 }
 
+#[derive(Debug, Subcommand)]
+enum Commands {
+    #[command(arg_required_else_help = true)]
+    Generate {
+        #[arg(value_name = "SHELL", default_missing_value = "zsh")]
+        shell: clap_complete::shells::Shell,
+    },
+}
 /// A struct to write helm repo description to
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 struct Repo {
@@ -57,25 +74,7 @@ struct LocalCharts {
     version: Option<String>,
 }
 
-#[derive(Clone, Tabled, Serialize)]
-struct ExecResult {
-    name: String,
-    latest_version: String,
-    current_version: String,
-    status: Status,
-}
-
 // Implementation for the ExecResult struct
-impl ExecResult {
-    fn new(name: String, latest_version: String, current_version: String, status: Status) -> Self {
-        Self {
-            name,
-            latest_version,
-            current_version,
-            status,
-        }
-    }
-}
 
 fn main() {
     // Preparations step
@@ -109,7 +108,7 @@ fn main() {
 
     // Parse the helmfile
     // Handling the result
-    match handle_result(&result, args.outdated_fail) {
+    match handle_result(&result, args.outdated_fail, args.output) {
         Ok(result) => {
             if result {
                 exit(1);
@@ -197,7 +196,11 @@ fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> 
 }
 
 /// Handle result
-fn handle_result(result: &Vec<ExecResult>, outdated_fail: bool) -> Result<bool> {
+fn handle_result(
+    result: &Vec<ExecResult>,
+    outdated_fail: bool,
+    output_kind: Outputs,
+) -> Result<bool> {
     let mut failed = false;
     for r in result.clone() {
         match r.status {
@@ -220,34 +223,12 @@ fn handle_result(result: &Vec<ExecResult>, outdated_fail: bool) -> Result<bool> 
             }
         }
     }
-    let template = r#"
-<table>
-    <tr>
-        <th>Chart Name</th>
-        <th>Current Version</th>
-        <th>Latest Version</th>
-        <th>Status</th>
-    </tr>
-    {{#each this as |tr|}}
-    <tr>
-        <th>{{tr.name}}</th>
-        <th>{{tr.current_version}}</th>
-        <th>{{tr.latest_version}}</th>
-        <th>{{tr.status}}</th>
-    </tr>
-    {{/each}}
-</table>
-"#;
-    let mut reg = Handlebars::new();
 
-    // TODO: Handle this error
-    reg.register_template_string("html_table", template)
-        .unwrap();
-
-    match reg.render("html_table", &result) {
-        Ok(res) => println!("{}", res),
-        Err(err) => error!("{}", err),
+    match output_kind {
+        Outputs::Yaml => print!("{}", output::YAML::print(result)?),
+        Outputs::HTML => print!("{}", output::HTML::print(result)?),
     };
+
     Ok(failed)
 }
 
