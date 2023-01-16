@@ -122,7 +122,7 @@ fn main() {
 }
 
 fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> Result<()> {
-    if local_chart.clone().name.is_some() {
+    if local_chart.name.is_some() {
         let version = local_chart.version.clone().unwrap();
         let chart = local_chart.name.clone().unwrap();
         return match version.is_empty() {

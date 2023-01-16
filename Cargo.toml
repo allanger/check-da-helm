@@ -14,7 +14,6 @@ version-compare = "0.1.0"
 clap = { version = "4.1.1", features = ["derive", "env"] }
 serde_yaml = "0.9.16"
 tabled = "0.10.0"
-build_html = "2.1.0"
 handlebars = "4.3.1"
 clap_complete = "4.0.6"
 
