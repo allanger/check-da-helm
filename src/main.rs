@@ -1,22 +1,21 @@
 mod connectors;
+mod output;
 mod types;
-
-use clap::{Parser, ValueEnum};
+use clap::{arg, command, Parser, Subcommand, ValueEnum};
 use connectors::{Argo, Connector, Helm, Helmfile};
-use handlebars::Handlebars;
 use log::{debug, error, info, warn};
+use output::Output;
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use std::{
     borrow::Borrow,
-    fmt::{self, format},
-    io::{Error, ErrorKind, Result},
+    io::Result,
     process::{exit, Command},
 };
-use tabled::Tabled;
+use types::ExecResult;
 use version_compare::{Cmp, Version};
 
-use crate::types::HelmChart;
+use crate::types::{HelmChart, Status};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Kinds {
@@ -25,13 +24,22 @@ enum Kinds {
     Helmfile,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum Outputs {
+    Yaml,
+    HTML,
+}
+
 /// Check you helm releaseas managed by Argo
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Type of the
+    /// How do you install your helm charts
     #[clap(long, value_enum)]
     kind: Kinds,
+    /// What kind of output would you like to receive?
+    #[clap(long, value_enum, default_value = "yaml")]
+    output: Outputs,
     /// Path to the helmfile
     #[clap(short, long, value_parser, default_value = "./")]
     path: String,
@@ -43,6 +51,14 @@ struct Args {
     no_sync: bool,
 }
 
+#[derive(Debug, Subcommand)]
+enum Commands {
+    #[command(arg_required_else_help = true)]
+    Generate {
+        #[arg(value_name = "SHELL", default_missing_value = "zsh")]
+        shell: clap_complete::shells::Shell,
+    },
+}
 /// A struct to write helm repo description to
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 struct Repo {
@@ -58,42 +74,7 @@ struct LocalCharts {
     version: Option<String>,
 }
 
-/// Three possible statuses of versions comparison
-#[derive(Clone, Serialize)]
-enum Status {
-    Uptodate,
-    Outdated,
-    Missing,
-}
-
-impl fmt::Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Status::Uptodate => write!(f, "Up-to-date"),
-            Status::Outdated => write!(f, "Outdated"),
-            Status::Missing => write!(f, "Missing"),
-        }
-    }
-}
-#[derive(Clone, Tabled, Serialize)]
-struct ExecResult {
-    name: String,
-    latest_version: String,
-    current_version: String,
-    status: Status,
-}
-
 // Implementation for the ExecResult struct
-impl ExecResult {
-    fn new(name: String, latest_version: String, current_version: String, status: Status) -> Self {
-        Self {
-            name,
-            latest_version,
-            current_version,
-            status,
-        }
-    }
-}
 
 fn main() {
     // Preparations step
@@ -110,7 +91,7 @@ fn main() {
 
     if !args.no_sync {
         info!("syncing helm repositories");
-        let res = match  args.kind {
+        let res = match args.kind {
             Kinds::Argo => Argo::init().sync_repos(),
             Kinds::Helm => Helm::init().sync_repos(),
             Kinds::Helmfile => Helmfile::init(args.path).sync_repos(),
@@ -122,12 +103,12 @@ fn main() {
     }
 
     charts.iter().for_each(|a| {
-        let err = check_chart(&mut result, a);
+        check_chart(&mut result, a).unwrap();
     });
 
     // Parse the helmfile
     // Handling the result
-    match handle_result(&result, args.outdated_fail) {
+    match handle_result(&result, args.outdated_fail, args.output) {
         Ok(result) => {
             if result {
                 exit(1);
@@ -141,7 +122,7 @@ fn main() {
 }
 
 fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> Result<()> {
-    if local_chart.clone().name.is_some() {
+    if local_chart.name.is_some() {
         let version = local_chart.version.clone().unwrap();
         let chart = local_chart.name.clone().unwrap();
         return match version.is_empty() {
@@ -215,7 +196,11 @@ fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> 
 }
 
 /// Handle result
-fn handle_result(result: &Vec<ExecResult>, outdated_fail: bool) -> Result<bool> {
+fn handle_result(
+    result: &Vec<ExecResult>,
+    outdated_fail: bool,
+    output_kind: Outputs,
+) -> Result<bool> {
     let mut failed = false;
     for r in result.clone() {
         match r.status {
@@ -238,133 +223,13 @@ fn handle_result(result: &Vec<ExecResult>, outdated_fail: bool) -> Result<bool> 
             }
         }
     }
-    let template = r#"
-<table>
-    <tr>
-        <th>Chart Name</th>
-        <th>Current Version</th>
-        <th>Latest Version</th>
-        <th>Status</th>
-    </tr>
-    {{#each this as |tr|}}
-    <tr>
-        <th>{{tr.name}}</th>
-        <th>{{tr.current_version}}</th>
-        <th>{{tr.latest_version}}</th>
-        <th>{{tr.status}}</th>
-    </tr>
-    {{/each}}
-</table>
-"#;
-    let mut reg = Handlebars::new();
 
-    // TODO: Handle this error
-    reg.register_template_string("html_table", template)
-        .unwrap();
-
-    match reg.render("html_table", &result) {
-        Ok(res) => println!("{}", res),
-        Err(err) => error!("{}", err),
+    match output_kind {
+        Outputs::Yaml => print!("{}", output::YAML::print(result)?),
+        Outputs::HTML => print!("{}", output::HTML::print(result)?),
     };
+
     Ok(failed)
-}
-
-/// Downloading repos from repositories
-fn repo_sync() -> Result<()> {
-    info!("syncing helm repos");
-    let cmd: String = "argocd app list -o json | jq '[ .[] | {name: .spec.source.chart, url: .spec.source.repoURL} ]'".to_string();
-    let output = Command::new("bash")
-        .arg("-c")
-        .arg(cmd)
-        .output()
-        .expect("helmfile is failed");
-    info!("{:?}", output.clone());
-    if output.status.success() {
-        let repos: Vec<Repo> = serde_json::from_slice(&output.stdout).unwrap();
-        info!("adding repositories");
-        for repo in repos.iter() {
-            let name = repo.name.clone();
-            if name.is_some() {
-                info!(
-                    "syncing {} with the origin {}",
-                    name.clone().unwrap(),
-                    repo.url
-                );
-                let cmd = format!(
-                    "helm repo add {} {}",
-                    name.clone().unwrap(),
-                    repo.url.clone()
-                );
-                debug!("running {}", cmd);
-                let output = Command::new("bash")
-                    .arg("-c")
-                    .arg(cmd)
-                    .output()
-                    .expect("helm repo sync is failed");
-                match output.status.success() {
-                    true => {
-                        info!(
-                            "{} with the origin {} is synced successfully",
-                            name.unwrap(),
-                            repo.url
-                        );
-                    }
-                    false => {
-                        error!(
-                            "{} with the origin {} can't be synced",
-                            name.unwrap(),
-                            repo.url
-                        )
-                    }
-                }
-            }
-        }
-        let cmd = "helm repo update";
-        let output = Command::new("bash")
-            .arg("-c")
-            .arg(cmd)
-            .output()
-            .expect("helm repo sync is failed");
-        match output.status.success() {
-            true => {
-                info!("repositories are updated successfully");
-            }
-            false => {
-                error!(
-                    "repositories can't be updated, {}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-            }
-        }
-
-        Ok(())
-    } else {
-        Err(Error::new(
-            ErrorKind::Other,
-            String::from_utf8_lossy(&output.stderr),
-        ))
-    }
-}
-
-/// Run helmfile list and write the result into struct
-fn parse_argo_apps() -> Result<Vec<LocalCharts>> {
-    let cmd: String = "argocd app list -o json | jq '[.[] | {chart: .spec.source.chart, version: .spec.source.targetRevision}]'".to_string();
-
-    debug!("executing '${}'", cmd);
-    let output = Command::new("bash")
-        .arg("-c")
-        .arg(cmd)
-        .output()
-        .expect("helmfile is failed");
-    let helm_stdout = String::from_utf8_lossy(&output.stdout);
-
-    match from_str::<Vec<LocalCharts>>(Borrow::borrow(&helm_stdout)) {
-        Ok(mut charts) => {
-            charts.dedup();
-            Ok(charts)
-        }
-        Err(err) => Err(err.into()),
-    }
 }
 
 /// Takes two version and returns the newer one.

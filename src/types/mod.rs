@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use tabled::Tabled;
 
 /// Struct for parsing charts info from helmfile
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -15,8 +16,8 @@ pub(crate) struct HelmRepo {
     pub(crate) url: String,
 }
 
-#[derive(Clone, Serialize)]
-enum Status {
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) enum Status {
     Uptodate,
     Outdated,
     Missing,
@@ -28,6 +29,25 @@ impl fmt::Display for Status {
             Status::Uptodate => write!(f, "Up-to-date"),
             Status::Outdated => write!(f, "Outdated"),
             Status::Missing => write!(f, "Missing"),
+        }
+    }
+}
+
+#[derive(Clone, Tabled, Serialize, Deserialize)]
+pub(crate) struct ExecResult {
+    pub(crate) name: String,
+    pub(crate) latest_version: String,
+    pub(crate) current_version: String,
+    pub(crate) status: Status,
+}
+
+impl ExecResult {
+    pub(crate) fn new(name: String, latest_version: String, current_version: String, status: Status) -> Self {
+        Self {
+            name,
+            latest_version,
+            current_version,
+            status,
         }
     }
 }

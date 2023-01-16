@@ -1,10 +1,13 @@
-use clap::Arg;
-use log::{debug, info, error};
-use serde_json::from_str;
 use crate::types::{self, HelmRepo};
+use log::{debug, error, info};
+use serde_json::from_str;
 
 use super::Connector;
-use std::{borrow::Borrow, io::{Result, Error, ErrorKind}, process::Command};
+use std::{
+    borrow::Borrow,
+    io::{Error, ErrorKind, Result},
+    process::Command,
+};
 
 pub(crate) struct Argo;
 
@@ -96,7 +99,7 @@ impl Connector for Argo {
                     );
                 }
             }
-    
+
             Ok(())
         } else {
             Err(Error::new(
@@ -104,12 +107,10 @@ impl Connector for Argo {
                 String::from_utf8_lossy(&output.stderr),
             ))
         }
-    
     }
-
 }
-impl Argo{
-pub(crate) fn init() -> Argo {
-    Argo
-}
+impl Argo {
+    pub(crate) fn init() -> Argo {
+        Argo
+    }
 }
