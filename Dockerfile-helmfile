@@ -1,0 +1,16 @@
+FROM alpine:3.17.1
+ARG HELM_VERSION=3.10.3
+ARG HELMFILE_VERSION=0.150.0
+
+ARG HELM_LINK=https://get.helm.sh/helm-v$HELM_VERSION-linux-$PLATFORM.tar.gz
+ARG HELMFILE_LINK=https://github.com/helmfile/helmfile/releases/download/v$HELMFILE_VERSION/helmfile_$HELMFILE_VERSION_linux_\$PLATFORM.tar.gz
+
+RUN apk update && apk add --no-cache curl
+COPY ./scripts /tmp
+RUN echo "installing helm from ${HELM_LINK}"
+ENV HELM_ARCHIVE_PATH=/tmp/helm.tar.gz
+RUN /tmp/download_for_arch.sh $HELM_LINK $HELM_ARCHIVE_PATH
+RUN tar -zxvf $HELM_ARCHIVE_PATH
+RUN echo $HELMFILE_LINK
+
+CMD ["sh"]
