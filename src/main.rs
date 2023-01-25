@@ -49,6 +49,9 @@ struct Args {
     /// Set to true if you don't want to sync repositories
     #[clap(short, long, action, default_value_t = false)]
     no_sync: bool,
+    /// Set to true if you don't wante to see up-to-date charts in the output
+    #[clap(long, action, default_value_t = true)]
+    no_uptodate: bool
 }
 
 #[derive(Debug, Subcommand)]
@@ -108,7 +111,7 @@ fn main() {
 
     // Parse the helmfile
     // Handling the result
-    match handle_result(&result, args.outdated_fail, args.output) {
+    match handle_result(&mut result, args.outdated_fail, args.output, args.no_uptodate) {
         Ok(result) => {
             if result {
                 exit(1);
@@ -197,11 +200,15 @@ fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> 
 
 /// Handle result
 fn handle_result(
-    result: &Vec<ExecResult>,
+    result: &mut Vec<ExecResult>,
     outdated_fail: bool,
     output_kind: Outputs,
+    no_uptodate: bool,
 ) -> Result<bool> {
     let mut failed = false;
+    if no_uptodate {
+        result.retain(|r| r.status != types::Status::Uptodate)
+    }
     for r in result.clone() {
         match r.status {
             Status::Uptodate => info!("{} is up-to-date", r.name),

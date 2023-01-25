@@ -16,7 +16,7 @@ pub(crate) struct HelmRepo {
     pub(crate) url: String,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum Status {
     Uptodate,
     Outdated,
@@ -42,7 +42,12 @@ pub(crate) struct ExecResult {
 }
 
 impl ExecResult {
-    pub(crate) fn new(name: String, latest_version: String, current_version: String, status: Status) -> Self {
+    pub(crate) fn new(
+        name: String,
+        latest_version: String,
+        current_version: String,
+        status: Status,
+    ) -> Self {
         Self {
             name,
             latest_version,
