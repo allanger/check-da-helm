@@ -4,7 +4,6 @@ RUN apk update && apk add --no-cache gcc musl-dev
 COPY ./ .
 RUN cargo build --release
 
-
 FROM alpine:3.17.1
 COPY --from=builder /src/target/release/cdh /bin/cdh
 WORKDIR /workdir
