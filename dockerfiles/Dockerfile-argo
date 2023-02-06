@@ -1,0 +1,11 @@
+FROM ghcr.io/allanger/clever-install as builder
+ARG ARGOCD_VERSION=v2.5.10
+ENV RUST_LOG=info
+RUN mkdir /out
+RUN clin -l "https://github.com/argoproj/argo-cd/releases/download/{{ version }}/argocd-{{ os }}-{{ arch }}" -i /out/argocd -p $ARGOCD_VERSION
+RUN chmod +x /out/argocd
+
+FROM check-da-helm-base 
+COPY --from=builder /out/ /usr/bin
+RUN apk update --no-cache && apk add --no-cache jq bash
+ENTRYPOINT ["cdh"]
