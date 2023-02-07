@@ -57,8 +57,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}-helmfile:latest
-            ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}-helmfile:stable
+            ghcr.io/${{ github.repository }}-helmfile:latest
+            ghcr.io/${{ github.repository }}-helmfile:stable
           labels: |
             action_id=${{ github.action }}
             action_link=${{ env.LINK }}
@@ -75,8 +75,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}-argo:latest
-            ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}-argo:stable
+            ghcr.io/${{ github.repository }}-argo:latest
+            ghcr.io/${{ github.repository }}-argo:stable
           labels: |
             action_id=${{ github.action }}
             action_link=${{ env.LINK }}

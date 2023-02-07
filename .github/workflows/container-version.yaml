@@ -44,7 +44,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}:${{ env.TAG }}
+            ghcr.io/${{ github.repository }}:${{ env.TAG }}
           labels: |
             action_id=${{ github.action }}
             action_link=${{ env.LINK }}
