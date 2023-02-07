@@ -10,7 +10,7 @@ RUN mkdir /out && for bin in `find /tmp | grep helm`; do cp $bin /out/; done
 RUN chmod +x /out/helm
 RUN chmod +x /out/helmfile
 
-FROM check-da-helm-base 
+FROM ghcr.io/allanger/check-da-helm-base 
 COPY --from=builder /out/ /usr/bin
 RUN apk update --no-cache && apk add --no-cache jq bash
 ENTRYPOINT ["cdh"]

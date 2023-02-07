@@ -39,9 +39,9 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: false
+          push: true
           tags: |
-            check-da-helm-base
+            ghcr.io/${{ github.repository }}-base:latest
           labels: |
             action_id=${{ github.action }}
             action_link=${{ env.LINK }}
