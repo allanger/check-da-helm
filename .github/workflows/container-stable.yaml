@@ -3,10 +3,10 @@ name: "Stable container"
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - "src/**"
+    # branches:
+      # - main
+    # paths:
+      # - "src/**"
 
 jobs:
   containerization:
@@ -41,13 +41,48 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: false
           tags: |
-            ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}:stable
-            ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}:latest
+            check-da-helm-base
           labels: |
             action_id=${{ github.action }}
             action_link=${{ env.LINK }}
             actor=${{ github.actor }}
             sha=${{ github.sha }}
             ref=${{ github.ref }}
+
+        - name: Build helmfile
+          uses: docker/build-push-action@v2
+          with:
+            builder: ${{ steps.buildx.outputs.name }}
+            context: ./dockerfiles
+            file: ./Dockerfile-helmfile
+            platforms: linux/amd64,linux/arm64
+            push: false
+            tags: |
+              ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}-helmfile:latest
+              ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}-helmfile:stable
+            labels: |
+              action_id=${{ github.action }}
+              action_link=${{ env.LINK }}
+              actor=${{ github.actor }}
+              sha=${{ github.sha }}
+              ref=${{ github.ref }}
+
+        - name: Build argo
+          uses: docker/build-push-action@v2
+          with:
+            builder: ${{ steps.buildx.outputs.name }}
+            context: ./dockerfiles
+            file: ./Dockerfile-argo
+            platforms: linux/amd64,linux/arm64
+            push: false
+            tags: |
+              ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}-argo:latest
+              ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}-argo:stable
+            labels: |
+              action_id=${{ github.action }}
+              action_link=${{ env.LINK }}
+              actor=${{ github.actor }}
+              sha=${{ github.sha }}
+              ref=${{ github.ref }}

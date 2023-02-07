@@ -8,13 +8,15 @@ use std::{borrow::Borrow, io::Result, process::Command};
 
 pub(crate) struct Helmfile {
     path: String,
+    env: String,
 }
 
 impl Connector for Helmfile {
     fn get_app(&self) -> Result<Vec<types::HelmChart>> {
         let cmd: String = format!(
-            "helmfile -f {} list --output json | jq '[.[] | {{chart: .name, version: .version}}]'",
-            self.path
+            "helmfile -f {} -e {} list --output json | jq '[.[] | {{chart: .name, version: .version}}]'",
+            self.path,
+            self.env
         )
         .to_string();
 
@@ -35,7 +37,7 @@ impl Connector for Helmfile {
         }
     }
     fn sync_repos(&self) -> Result<()> {
-        let cmd: String = format!("helmfile -f {} sync", self.path);
+        let cmd: String = format!("helmfile -f {} -e {} sync", self.path, self.env);
         Command::new("bash")
             .arg("-c")
             .arg(cmd)
@@ -47,7 +49,7 @@ impl Connector for Helmfile {
     type ConnectorType = Helmfile;
 }
 impl Helmfile {
-    pub(crate) fn init(path: String) -> Self {
-        Self { path: path }
+    pub(crate) fn init(path: String, env: String) -> Self {
+        Self {path, env}
     }
 }

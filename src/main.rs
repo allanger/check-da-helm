@@ -43,6 +43,9 @@ struct Args {
     /// Path to the helmfile
     #[clap(short, long, value_parser, default_value = "./")]
     path: String,
+    /// Pass an environment to the helmfile
+    #[arg(long, required = false, default_value = "default")]
+    helmfile_environment: String,
     /// Should execution be failed if you have outdated charts
     #[clap(short, long, action, default_value_t = false, env = "OUTDATED_FAIL")]
     outdated_fail: bool,
@@ -85,7 +88,7 @@ fn main() {
     let charts = match args.kind {
         Kinds::Argo => Argo::init().get_app(),
         Kinds::Helm => Helm::init().get_app(),
-        Kinds::Helmfile => Helmfile::init(args.path.clone()).get_app(),
+        Kinds::Helmfile => Helmfile::init(args.path.clone(), args.helmfile_environment.clone()).get_app(),
     }
     .unwrap();
 
@@ -94,7 +97,7 @@ fn main() {
         let res = match args.kind {
             Kinds::Argo => Argo::init().sync_repos(),
             Kinds::Helm => Helm::init().sync_repos(),
-            Kinds::Helmfile => Helmfile::init(args.path).sync_repos(),
+            Kinds::Helmfile => Helmfile::init(args.path, args.helmfile_environment).sync_repos(),
         };
         match res {
             Ok(_) => info!("helm repos are synced"),
