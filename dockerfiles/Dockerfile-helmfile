@@ -1,9 +1,9 @@
 FROM ghcr.io/allanger/clever-install as builder
 RUN apk update && apk add tar
 ARG HELM_VERSION=v3.10.3
-ARG HELMFILE_VERSION=v0.144.0
+ARG HELMFILE_VERSION=0.150.0
 ENV RUST_LOG=info
-RUN clin -l "https://github.com/roboll/helmfile/releases/download/{{ version }}/helmfile_{{ os }}_{{ arch }}" -i /tmp/helmfile -p $HELMFILE_VERSION
+RUN clin -l "https://github.com/helmfile/helmfile/releases/download/v{{ version }}/helmfile_{{ os }}_{{ arch }}.tar.gz" -i /tmp/helmfile -p $HELMFILE_VERSION
 RUN clin -l "https://get.helm.sh/helm-{{ version }}-{{ os }}-{{ arch }}.tar.gz" -i /tmp/helm.tar.gz -p $HELM_VERSION
 RUN tar -xf /tmp/helm.tar.gz  -C /tmp && rm -f /tmp/helm.tar.gz 
 RUN mkdir /out && for bin in `find /tmp | grep helm`; do cp $bin /out/; done
