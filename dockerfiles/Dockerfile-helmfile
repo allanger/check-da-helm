@@ -1,5 +1,5 @@
 FROM ghcr.io/allanger/dumb-downloader as builder
-RUN apk update && apk add tar
+RUN apt-get update -y && apt-get install tar -y
 ARG HELM_VERSION=v3.10.3
 ARG HELMFILE_VERSION=0.150.0
 ENV RUST_LOG=info
