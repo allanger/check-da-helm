@@ -2,7 +2,7 @@ FROM ghcr.io/allanger/clever-install as builder
 ARG ARGOCD_VERSION=v2.5.10
 ENV RUST_LOG=info
 RUN mkdir /out
-RUN clin -l "https://github.com/argoproj/argo-cd/releases/download/{{ version }}/argocd-{{ os }}-{{ arch }}" -i /out/argocd -p $ARGOCD_VERSION
+RUN dudo -l "https://github.com/argoproj/argo-cd/releases/download/{{ version }}/argocd-{{ os }}-{{ arch }}" -i /out/argocd -p $ARGOCD_VERSION
 RUN chmod +x /out/argocd
 
 FROM ghcr.io/allanger/check-da-helm-base 
