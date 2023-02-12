@@ -1,4 +1,4 @@
-FROM ghcr.io/allanger/dumd-downloader as builder
+FROM ghcr.io/allanger/dumb-downloader as builder
 ARG ARGOCD_VERSION=v2.5.10
 ENV RUST_LOG=info
 RUN mkdir /out
