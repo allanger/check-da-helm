@@ -1,5 +1,5 @@
 ---
-name: "Version container"
+name: "Versioned container"
 
 on:
   push:
@@ -27,15 +27,13 @@ jobs:
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@master
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
-
-      - name: Build
+      - name: Build base
         uses: docker/build-push-action@v2
         with:
           builder: ${{ steps.buildx.outputs.name }}
@@ -44,7 +42,40 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/allanger/${{ env.GITHUB_REPOSITORY }}:${{ env.TAG }}
+            ghcr.io/${{ github.repository }}-base:${{ env.TAG }}
+          labels: |
+            action_id=${{ github.action }}
+            action_link=${{ env.LINK }}
+            actor=${{ github.actor }}
+            sha=${{ github.sha }}
+            ref=${{ github.ref }}
+      - name: Build helmfile
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./dockerfiles
+          file: ./dockerfiles/Dockerfile-helmfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-helmfile:${{ env.TAG }}
+          labels: |
+            action_id=${{ github.action }}
+            action_link=${{ env.LINK }}
+            actor=${{ github.actor }}
+            sha=${{ github.sha }}
+            ref=${{ github.ref }}
+
+      - name: Build argo
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./dockerfiles
+          file: ./dockerfiles/Dockerfile-argo
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-argo:${{ env.TAG }}
           labels: |
             action_id=${{ github.action }}
             action_link=${{ env.LINK }}

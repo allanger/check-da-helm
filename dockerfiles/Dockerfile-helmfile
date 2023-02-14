@@ -1,0 +1,16 @@
+FROM ghcr.io/allanger/dumb-downloader as builder
+RUN apt-get update -y && apt-get install tar -y
+ARG HELM_VERSION=v3.10.3
+ARG HELMFILE_VERSION=0.150.0
+ENV RUST_LOG=info
+RUN dudo -l "https://github.com/helmfile/helmfile/releases/download/v{{ version }}/helmfile_{{ version }}_{{ os }}_{{ arch }}.tar.gz" -i /tmp/helmfile -p $HELMFILE_VERSION
+RUN dudo -l "https://get.helm.sh/helm-{{ version }}-{{ os }}-{{ arch }}.tar.gz" -i /tmp/helm.tar.gz -p $HELM_VERSION
+RUN tar -xf /tmp/helm.tar.gz  -C /tmp && rm -f /tmp/helm.tar.gz 
+RUN mkdir /out && for bin in `find /tmp | grep helm`; do cp $bin /out/; done
+RUN chmod +x /out/helm
+RUN chmod +x /out/helmfile
+
+FROM ghcr.io/allanger/check-da-helm-base 
+COPY --from=builder /out/ /usr/bin
+RUN apk update --no-cache && apk add --no-cache jq bash
+ENTRYPOINT ["cdh"]
