@@ -1,4 +1,5 @@
-FROM ghcr.io/allanger/dumb-downloader as builder
+ARG BASE_VERSION=latest
+FROM ghcr.io/allanger/dumb-downloader:${BASE_VERSION} as builder
 RUN apt-get update -y && apt-get install tar -y
 ARG HELM_VERSION=v3.10.3
 ARG HELMFILE_VERSION=0.150.0
