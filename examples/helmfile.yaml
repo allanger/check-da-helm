@@ -1,14 +1,15 @@
 repositories:
-  - name: keel
-    url: https://charts.keel.sh
+  - name: argo
+    url: https://argoproj.github.io/argo-helm
 
 releases:
-  # -----------------------------
-  # -- Keel
-  # -----------------------------
-  - name: keel
+  - name: argocd
     installed: true
-    namespace: keel-system
+    namespace: argocd
     createNamespace: true
-    chart: keel/keel
-    version: 0.9.10
+    chart: argo/argo-cd
+    version: 5.23.3
+    values:
+      - server:
+          extraArgs:
+            - --insecure

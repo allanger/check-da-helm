@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sealed-secrets
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: argo-cd
+    repoURL: https://argoproj.github.io/argo-helm
+    targetRevision: 5.23.3
+    helm:
+      releaseName: sealed-secrets
+  syncPolicy:
+    automated: {}
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: argocd

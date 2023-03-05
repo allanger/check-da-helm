@@ -1,0 +1,26 @@
+---
+kind: pipeline
+type: kubernetes
+name: Tests
+
+trigger:
+  event:
+    - push
+
+steps:
+  - name: Prepare helm and helmfile
+    image: ghcr.io/helmfile/helmfile:canary
+    commands: 
+      - mkdir -p bin
+      - cp $(which helm) ./bin/helm
+      - cp $(which helmfile) ./bin/helmfile
+
+  - name: Unit tests
+    image: rust:slim
+    environment:
+      CARGO_BUILD_JOBS: 1
+    commands:
+      - export PATH=$PWD/bin:$PATH
+      - helm
+      - helmfile
+      - cargo test

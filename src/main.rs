@@ -109,6 +109,7 @@ fn main() {
     }
 
     charts.iter().for_each(|a| {
+        debug!("{:?}", a);
         check_chart(&mut result, a).unwrap();
     });
 
@@ -128,9 +129,9 @@ fn main() {
 }
 
 fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> Result<()> {
-    if local_chart.name.is_some() {
+    if local_chart.chart.is_some() {
         let version = local_chart.version.clone().unwrap();
-        let chart = local_chart.name.clone().unwrap();
+        let chart = local_chart.chart.clone().unwrap();
         return match version.is_empty() {
             true => {
                 warn!(
@@ -142,8 +143,8 @@ fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> 
             false => {
                 info!("checking {} - {}", chart, version);
                 let cmd = format!(
-                    "helm search repo {}/{} --versions --output json",
-                    chart, chart
+                    "helm search repo {} --versions --output json",
+                    chart,
                 );
                 debug!("executing '${}'", cmd);
                 let output = Command::new("bash")
@@ -156,6 +157,8 @@ fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> 
                 // Remove "v" from version definitions
                 let mut versions: Vec<HelmChart> = from_str(helm_stdout.borrow()).unwrap();
                 versions.iter_mut().for_each(|f| {
+                    f.name = local_chart.name.clone();
+                    f.chart = local_chart.chart.clone();
                     if f.version.is_some() {
                         f.version = Some(f.version.as_ref().unwrap().replace('v', ""));
                     }
@@ -172,8 +175,10 @@ fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> 
                     );
                 }
                 let remote = Version::from(current_version.as_str()).unwrap();
+                debug!("{:?}", versions);
                 let status: Status = if versions.contains(&HelmChart {
-                    name: Some(format!("{}/{}", chart.clone(), chart.clone())),
+                    chart: Some(chart.clone()),
+                    name: local_chart.name.clone(),
                     version: Some(version.clone()),
                 }) {
                     match local.compare(remote.clone()) {
@@ -187,6 +192,7 @@ fn check_chart(result: &mut Vec<ExecResult>, local_chart: &types::HelmChart) -> 
                 };
 
                 result.push(ExecResult::new(
+                    local_chart.name.clone().unwrap(),
                     chart.clone(),
                     current_version.clone(),
                     version.clone(),
@@ -214,21 +220,21 @@ fn handle_result(
     }
     for r in result.clone() {
         match r.status {
-            Status::Uptodate => info!("{} is up-to-date", r.name),
+            Status::Uptodate => info!("{} is up-to-date", r.chart),
             Status::Outdated => {
                 if outdated_fail {
                     failed = true
                 }
                 warn!(
                     "{} is outdated. Current version is {}, but the latest is {}",
-                    r.name, r.current_version, r.latest_version
+                    r.chart, r.current_version, r.latest_version
                 );
             }
             Status::Missing => {
                 failed = true;
                 error!(
                     "{} is broken. Current version is {}, but it can't be found in the repo",
-                    r.name, r.current_version
+                    r.chart, r.current_version
                 );
             }
         }

@@ -15,7 +15,7 @@ impl Connector for Argo {
     type ConnectorType = Argo;
 
     fn get_app(&self) -> Result<Vec<types::HelmChart>> {
-        let cmd: String = "argocd app list -o json | jq '[.[] | {chart: .spec.source.chart, version: .spec.source.targetRevision}]'".to_string();
+        let cmd: String = "argocd app list -o json | jq '[.[] | {chart: .spec.source.chart, version: .spec.source.targetRevision, name: .spec.source.helm.releaseName}]'".to_string();
 
         debug!("executing '${}'", cmd);
         let output = Command::new("bash")
@@ -27,7 +27,7 @@ impl Connector for Argo {
 
         match from_str::<Vec<types::HelmChart>>(Borrow::borrow(&helm_stdout)) {
             Ok(mut charts) => {
-                charts.dedup();
+                charts.iter_mut().for_each(|chart| {chart.chart = Some(format!("{}/{}", chart.chart.clone().unwrap(), chart.chart.clone().unwrap()))});
                 Ok(charts)
             }
             Err(err) => Err(err.into()),

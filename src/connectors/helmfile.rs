@@ -14,7 +14,7 @@ pub(crate) struct Helmfile {
 impl Connector for Helmfile {
     fn get_app(&self) -> Result<Vec<types::HelmChart>> {
         let cmd: String = format!(
-            "helmfile -f {} -e {} list --output json | jq '[.[] | {{chart: .name, version: .version}}]'",
+            "helmfile -f {} -e {} list --output json | jq '[.[] | {{chart: .chart, version: .version, name: .name}}]'",
             self.path,
             self.env
         )
@@ -48,8 +48,48 @@ impl Connector for Helmfile {
 
     type ConnectorType = Helmfile;
 }
+
 impl Helmfile {
     pub(crate) fn init(path: String, env: String) -> Self {
         Self {path, env}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::NamedTempFile;
+    use std::io::Write;
+    use crate::connectors::{Helmfile, Connector};
+    use crate::types;
+
+    static HELMFILE_EXAMPLE: &str = "repositories:\n
+  - name: argo\n
+    url: https://argoproj.github.io/argo-helm\n
+releases:\n
+  - name: argocd\n
+    installed: true\n
+    namespace: argocd\n
+    createNamespace: true\n
+    chart: argo/argo-cd\n
+    version: 5.23.3\n
+    values:\n
+      - server:\n
+          extraArgs:\n
+            - --insecure";
+
+    #[test]
+    fn test_helmfile() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "{}", HELMFILE_EXAMPLE.clone()).unwrap();
+        let path = file.into_temp_path();
+        let helmfile_app = Helmfile::init(path.to_string_lossy().to_string(), "default".to_string()).get_app().unwrap();
+        let app = types::HelmChart{
+            chart: Some("argo/argo-cd".to_string()),
+            name: Some("argocd".to_string()),
+            version: Some("5.23.3".to_string()),
+        };
+        let apps: Vec<types::HelmChart> = vec![app];
+        assert_eq!(apps, helmfile_app);
+        path.close().unwrap();
     }
 }

@@ -5,8 +5,10 @@ use tabled::Tabled;
 /// Struct for parsing charts info from helmfile
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub(crate) struct HelmChart {
-    #[serde(alias = "name", alias = "chart")]
+    // #[serde(alias = "name", alias = "chart")]
     pub(crate) name: Option<String>,
+    // #[serde(alias = "name", alias = "chart")]
+    pub(crate) chart: Option<String>,
     pub(crate) version: Option<String>,
 }
 
@@ -36,6 +38,7 @@ impl fmt::Display for Status {
 #[derive(Clone, Tabled, Serialize, Deserialize)]
 pub(crate) struct ExecResult {
     pub(crate) name: String,
+    pub(crate) chart: String,
     pub(crate) latest_version: String,
     pub(crate) current_version: String,
     pub(crate) status: Status,
@@ -44,12 +47,14 @@ pub(crate) struct ExecResult {
 impl ExecResult {
     pub(crate) fn new(
         name: String,
+        chart: String,
         latest_version: String,
         current_version: String,
         status: Status,
     ) -> Self {
         Self {
             name,
+            chart,
             latest_version,
             current_version,
             status,
