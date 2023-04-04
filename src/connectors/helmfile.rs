@@ -37,7 +37,7 @@ impl Connector for Helmfile {
         }
     }
     fn sync_repos(&self) -> Result<()> {
-        let cmd: String = format!("helmfile -f {} -e {} sync", self.path, self.env);
+        let cmd: String = format!("helmfile -f {} -e {} repos", self.path, self.env);
         Command::new("bash")
             .arg("-c")
             .arg(cmd)
