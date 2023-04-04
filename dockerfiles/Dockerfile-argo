@@ -3,7 +3,7 @@ FROM ghcr.io/allanger/dumb-downloader as builder
 ARG ARGOCD_VERSION=v2.5.10
 ENV RUST_LOG=info
 RUN mkdir /out
-RUN dudo -l "https://github.com/argoproj/argo-cd/releases/download/{{ version }}/argocd-{{ os }}-{{ arch }}" -i /tmp/argocd -p $ARGOCD_VERSION
+RUN dudo -l "https://github.com/argoproj/argo-cd/releases/download/{{ version }}/argocd-{{ os }}-{{ arch }}" -d /tmp/argocd -p $ARGOCD_VERSION
 RUN mv /tmp/argocd /out/argocd && chmod +x /out/argocd
 
 FROM ghcr.io/allanger/check-da-helm-base:${BASE_VERSION} 
