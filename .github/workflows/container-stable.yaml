@@ -52,6 +52,7 @@ jobs:
   build_containers:
     name: Build final images
     runs-on: ubuntu-latest
+    needs: prepare_base
     strategy:
       matrix:
         target_image:
