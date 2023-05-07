@@ -87,6 +87,19 @@ fn main() {
     env_logger::init();
     let args = Args::parse();
     let mut result: Vec<ExecResult> = Vec::new();
+    
+    if !args.no_sync {
+        info!("syncing helm repositories");
+        let res = match args.kind {
+            Kinds::Argo => Argo::init().sync_repos(),
+            Kinds::Helm => Helm::init().sync_repos(),
+            Kinds::Helmfile => Helmfile::init(args.path.clone(), args.helmfile_environment.clone()).sync_repos(),
+        };
+        match res {
+            Ok(_) => info!("helm repos are synced"),
+            Err(err) => error!("couldn't sync repos', {}", err),
+        }
+    }
 
     let charts = match args.kind {
         Kinds::Argo => Argo::init().get_app(),
@@ -94,19 +107,6 @@ fn main() {
         Kinds::Helmfile => Helmfile::init(args.path.clone(), args.helmfile_environment.clone()).get_app(),
     }
     .unwrap();
-
-    if !args.no_sync {
-        info!("syncing helm repositories");
-        let res = match args.kind {
-            Kinds::Argo => Argo::init().sync_repos(),
-            Kinds::Helm => Helm::init().sync_repos(),
-            Kinds::Helmfile => Helmfile::init(args.path, args.helmfile_environment).sync_repos(),
-        };
-        match res {
-            Ok(_) => info!("helm repos are synced"),
-            Err(err) => error!("couldn't sync repos', {}", err),
-        }
-    }
 
     charts.iter().for_each(|a| {
         debug!("{:?}", a);
