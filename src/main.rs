@@ -20,7 +20,7 @@ use crate::types::{HelmChart, Status};
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Kinds {
     Argo,
-    Helm,
+    //Helm,
     Helmfile,
 }
 
@@ -92,7 +92,7 @@ fn main() {
         info!("syncing helm repositories");
         let res = match args.kind {
             Kinds::Argo => Argo::init().sync_repos(),
-            Kinds::Helm => Helm::init().sync_repos(),
+            // Kinds::Helm => Helm::init().sync_repos(),
             Kinds::Helmfile => Helmfile::init(args.path.clone(), args.helmfile_environment.clone()).sync_repos(),
         };
         match res {
@@ -103,7 +103,7 @@ fn main() {
 
     let charts = match args.kind {
         Kinds::Argo => Argo::init().get_app(),
-        Kinds::Helm => Helm::init().get_app(),
+        //Kinds::Helm => Helm::init().get_app(),
         Kinds::Helmfile => Helmfile::init(args.path.clone(), args.helmfile_environment.clone()).get_app(),
     }
     .unwrap();
