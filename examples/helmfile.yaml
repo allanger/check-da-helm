@@ -1,6 +1,9 @@
 repositories:
   - name: argo
     url: https://argoproj.github.io/argo-helm
+  - name: bitnami
+    url: registry-1.docker.io/bitnamicharts
+    oci: true
 
 releases:
   - name: argocd
@@ -13,3 +16,8 @@ releases:
       - server:
           extraArgs:
             - --insecure
+  
+  - name: redis
+    installed: true
+    chart: bitnami/redis
+    version: 17.13.1
